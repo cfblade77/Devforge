@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .cls-1{fill:#fff;}
+      .cls-2{fill:#dee0e2;}
+      .cls-3{fill:none;stroke:#4d535b;stroke-miterlimit:10;stroke-width:2px;}
+      .cls-4{fill:#a1f4c0;}
+    </style>
+  </defs>
+  <g style="isolation:isolate">
+    <g id="white">
+      <rect class="cls-1" x="18" y="10" width="28" height="44" rx="4"/>
+      <circle class="cls-2" cx="32" cy="46" r="2"/>
+    </g>
+    <g id="stroke">
+      <rect class="cls-3" x="18" y="10" width="28" height="44" rx="4"/>
+      <line class="cls-3" x1="18" y1="16" x2="46" y2="16"/>
+      <circle class="cls-3" cx="32" cy="46" r="2"/>
+      <polyline class="cls-3" points="24 24 32 32 40 24"/>
+      <polyline class="cls-3" points="24 36 32 28 40 36"/>
+    </g>
+    <g id="flah">
+      <polygon class="cls-4" points="24 24 32 32 40 24"/>
+      <polygon class="cls-4" points="24 36 32 28 40 36"/>
+    </g>
+  </g>
+</svg>

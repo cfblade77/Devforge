@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <style>
+      .cls-1{fill:#fff;}
+      .cls-2{fill:#dee0e2;}
+      .cls-3{fill:none;stroke:#4d535b;stroke-miterlimit:10;stroke-width:2px;}
+      .cls-4{fill:#a1f4c0;}
+    </style>
+  </defs>
+  <g style="isolation:isolate">
+    <g id="white">
+      <rect class="cls-1" x="12" y="24" width="40" height="16" rx="4"/>
+      <circle class="cls-2" cx="22" cy="32" r="4"/>
+      <circle class="cls-2" cx="42" cy="32" r="4"/>
+    </g>
+    <g id="stroke">
+      <rect class="cls-3" x="12" y="24" width="40" height="16" rx="4"/>
+      <circle class="cls-3" cx="22" cy="32" r="4"/>
+      <circle class="cls-3" cx="42" cy="32" r="4"/>
+      <path class="cls-3" d="M12 32h-4m48 0h4"/>
+      <path class="cls-3" d="M22 28l-2 4 2 4m20-8l2 4-2 4"/>
+    </g>
+    <g id="flah">
+      <circle class="cls-4" cx="22" cy="32" r="4"/>
+      <circle class="cls-4" cx="42" cy="32" r="4"/>
+    </g>
+  </g>
+</svg>
