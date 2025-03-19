@@ -85,33 +85,40 @@ function EditGig() {
       revisions > 0 &&
       time > 0
     ) {
-      const formData = new FormData();
-      files.forEach((file) => formData.append("images", file));
-      const gigData = {
-        title,
-        description,
-        category,
-        features,
-        price,
-        revisions,
-        time,
-        shortDesc,
-      };
-      const response = await axios.put(
-        `${EDIT_GIG_DATA}/${data.id}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${cookies.jwt}`,
-          },
-          params: gigData,
+      try {
+        const formData = new FormData();
+        files.forEach((file) => formData.append("images", file));
+
+        formData.append("title", title);
+        formData.append("description", description);
+        formData.append("category", category);
+        formData.append("features", JSON.stringify(features));
+        formData.append("price", price);
+        formData.append("revisions", revisions);
+        formData.append("time", time);
+        formData.append("shortDesc", shortDesc);
+
+        const response = await axios.put(
+          `${EDIT_GIG_DATA}/${data.id}`,
+          formData,
+          {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${cookies.jwt}`,
+            }
+          }
+        );
+
+        if (response.status === 201) {
+          router.push("/seller/gigs");
         }
-      );
-      if (response.status === 201) {
-        router.push("/seller/gigs");
+      } catch (error) {
+        console.error("Error updating gig:", error);
+        alert(error.response?.data?.message || "Failed to update gig. Please try again.");
       }
+    } else {
+      alert("All fields are required and must be valid.");
     }
   };
   return (

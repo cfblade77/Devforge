@@ -58,6 +58,7 @@ export const confirmOrder = async (req, res, next) => {
 export const getBuyerOrders = async (req, res, next) => {
   try {
     if (req.userId) {
+     
       const prisma = new PrismaClient();
       const orders = await prisma.orders.findMany({
         where: { buyerId: req.userId, isCompleted: true },

@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
+    domains: ['ui-avatars.com', `avatars.githubusercontent.com`],
     remotePatterns: [
       {
         protocol: "http",

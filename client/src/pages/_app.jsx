@@ -17,7 +17,10 @@ export default function App({ Component, pageProps }) {
       router.pathname.includes("/seller") ||
       router.pathname.includes("/buyer")
     ) {
-      if (!cookies.jwt) {
+      // Check for either jwt or auth_status cookie (more permissive)
+      const isAuthenticated = cookies.jwt || cookies.auth_status === "authenticated";
+      if (!isAuthenticated) {
+        console.log("Not authenticated, redirecting from protected route");
         router.push("/");
       }
     }
@@ -26,15 +29,14 @@ export default function App({ Component, pageProps }) {
   return (
     <StateProvider initialState={initialState} reducer={reducer}>
       <Head>
-        
+
         <title>Devforge</title>
       </Head>
       <div className="relative flex flex-col h-screen justify-between">
         <Navbar />
         <div
-          className={`${
-            router.pathname !== "/" ? "mt-36" : ""
-          } mb-auto w-full mx-auto`}
+          className={`${router.pathname !== "/" ? "mt-36" : ""
+            } mb-auto w-full mx-auto`}
         >
           <Component {...pageProps} />
         </div>

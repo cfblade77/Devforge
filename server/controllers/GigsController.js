@@ -1,8 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 import { existsSync, renameSync, unlinkSync } from "fs";
 
 export const addGig = async (req, res, next) => {
+
+  let prisma;
   try {
     if (!req.files || !req.files.length) {
       return res.status(400).json({ message: "Please upload at least one image" });
@@ -16,7 +18,7 @@ export const addGig = async (req, res, next) => {
       return newFileName;
     });
 
-    // Get data from request body instead of query
+    // Get data from request body instead of query  
     const {
       title,
       description,
@@ -28,13 +30,24 @@ export const addGig = async (req, res, next) => {
       shortDesc,
     } = req.body;
 
+    console.log("Received gig data:", {
+      title,
+      description,
+      category,
+      features,
+      price,
+      revisions,
+      time,
+      shortDesc,
+    });
+
     // Validate required fields
-    if (!title || !description || !category || !features || !price || 
-        !revisions || !time || !shortDesc) {
+    if (!title || !description || !category || !features || !price ||
+      !revisions || !time || !shortDesc) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const prisma = new PrismaClient();
+    prisma = new PrismaClient();
 
     // Parse features from JSON string
     const parsedFeatures = JSON.parse(features);
@@ -54,19 +67,19 @@ export const addGig = async (req, res, next) => {
       },
     });
 
-    return res.status(201).json({ 
+    return res.status(201).json({
       message: "Successfully created the gig.",
-      gig 
+      gig
     });
 
   } catch (err) {
     console.error("Error creating gig:", err);
-    return res.status(500).json({ 
+    return res.status(500).json({
       message: "Internal Server Error",
-      error: err.message 
+      error: err.message
     });
   } finally {
-    await prisma.$disconnect();
+    if (prisma) await prisma.$disconnect();
   }
 };
 
@@ -137,59 +150,112 @@ export const getGigData = async (req, res, next) => {
 };
 
 export const editGig = async (req, res, next) => {
+  let prisma;
   try {
-    if (req.files) {
-      const fileKeys = Object.keys(req.files);
-      const fileNames = [];
-      fileKeys.forEach((file) => {
-        const date = Date.now();
-        renameSync(
-          req.files[file].path,
-          "uploads/" + date + req.files[file].originalname
-        );
-        fileNames.push(date + req.files[file].originalname);
-      });
-      if (req.query) {
-        const {
-          title,
-          description,
-          category,
-          features,
-          price,
-          revisions,
-          time,
-          shortDesc,
-        } = req.query;
-        const prisma = new PrismaClient();
-        const oldData = await prisma.gigs.findUnique({
-          where: { id: parseInt(req.params.gigId) },
-        });
-        await prisma.gigs.update({
-          where: { id: parseInt(req.params.gigId) },
-          data: {
-            title,
-            description,
-            deliveryTime: parseInt(time),
-            category,
-            features,
-            price: parseInt(price),
-            shortDesc,
-            revisions: parseInt(revisions),
-            createdBy: { connect: { id: parseInt(req.userId) } },
-            images: fileNames,
-          },
-        });
-        oldData?.images.forEach((image) => {
-          if (existsSync(`uploads/${image}`)) unlinkSync(`uploads/${image}`);
-        });
-
-        return res.status(201).send("Successfully Eited the gig.");
-      }
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({ message: "Please upload at least one image" });
     }
-    return res.status(400).send("All properties should be required.");
+
+    // Handle file uploads
+    const fileNames = req.files.map(file => {
+      const date = Date.now();
+      const newFileName = date + file.originalname;
+      renameSync(file.path, "uploads/" + newFileName);
+      return newFileName;
+    });
+
+    // Get data from request body
+    const {
+      title,
+      description,
+      category,
+      features,
+      price,
+      revisions,
+      time,
+      shortDesc,
+    } = req.body;
+
+    console.log("Received gig edit data:", {
+      title,
+      description,
+      category,
+      features,
+      price,
+      revisions,
+      time,
+      shortDesc,
+    });
+
+    // Validate required fields
+    if (!title || !description || !category || !features || !price ||
+      !revisions || !time || !shortDesc) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    prisma = new PrismaClient();
+
+    // Get old data to clean up images
+    const oldData = await prisma.gigs.findUnique({
+      where: { id: parseInt(req.params.gigId) },
+    });
+
+    if (!oldData) {
+      return res.status(404).json({ message: "Gig not found" });
+    }
+
+    // Check if user is the owner of the gig
+    if (oldData.userId !== req.userId) {
+      return res.status(403).json({ message: "You can only edit your own gigs" });
+    }
+
+    // Parse features from JSON string if it's a string
+    let parsedFeatures;
+    try {
+      parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
+    } catch (e) {
+      return res.status(400).json({ message: "Invalid features format" });
+    }
+
+    // Update the gig
+    const updatedGig = await prisma.gigs.update({
+      where: { id: parseInt(req.params.gigId) },
+      data: {
+        title,
+        description,
+        deliveryTime: parseInt(time),
+        category,
+        features: parsedFeatures,
+        price: parseInt(price),
+        shortDesc,
+        revisions: parseInt(revisions),
+        images: fileNames,
+      },
+    });
+
+    // Clean up old images
+    oldData.images.forEach((image) => {
+      try {
+        if (existsSync(`uploads/${image}`)) {
+          unlinkSync(`uploads/${image}`);
+        }
+      } catch (err) {
+        console.error(`Failed to delete image ${image}:`, err);
+      }
+    });
+
+    return res.status(201).json({
+      message: "Successfully updated the gig.",
+      gig: updatedGig
+    });
   } catch (err) {
-    console.log(err);
-    return res.status(500).send("Internal Server Error");
+    console.error("Error updating gig:", err);
+    return res.status(500).json({
+      message: "Internal Server Error",
+      error: err.message
+    });
+  } finally {
+    if (prisma) await prisma.$disconnect();
   }
 };
 

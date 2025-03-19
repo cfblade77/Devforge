@@ -3,10 +3,14 @@ import dotenv from "dotenv";
 import cors from "cors";
 import authRoutes from "./routes/AuthRoutes.js";
 import cookieParser from "cookie-parser";
+import passport from "passport"; 
+import "./passport.js";
 import { gigRoutes } from "./routes/GigRoutes.js";
 import { orderRoutes } from "./routes/OrderRoutes.js";
 import { messageRoutes } from "./routes/MessageRoutes.js";
 import { dashboardRoutes } from "./routes/DashboardRoutes.js";
+
+
 
 dotenv.config();
 
@@ -24,6 +28,7 @@ app.use(
 app.use("/uploads", express.static("uploads"));
 app.use("/uploads/profiles", express.static("uploads/profiles"));
 
+app.use(passport.initialize()); 
 app.use(cookieParser());
 app.use(express.json());
 

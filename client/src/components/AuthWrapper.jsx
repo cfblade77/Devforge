@@ -37,7 +37,8 @@ function AuthWrapper({ type }) {
           { email, password },
           { withCredentials: true }
         );
-        setCookies("jwt", { jwt: jwt });
+        setCookies("jwt", jwt);
+        setCookies("auth_status", "authenticated");
         dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
 
         if (user) {
@@ -89,13 +90,12 @@ function AuthWrapper({ type }) {
               in to Devforge
             </h3>
             <div className="flex flex-col gap-5">
-              <button className="text-white bg-blue-500 p-3 font-semibold w-80 flex items-center justify-center relative">
-                <MdFacebook className="absolute left-4 text-2xl" />
-                Continue with Facebook
-              </button>
-              <button className="border border-slate-300 p-3 font-medium w-80 flex items-center justify-center relative">
-                <FcGoogle className="absolute left-4 text-2xl" />
-                Continue with Google
+
+              <button
+                className="border border-slate-300 p-3 font-medium w-80 flex items-center justify-center relative"
+                onClick={() => window.location.href = "http://localhost:8747/api/auth/github"}
+              >
+                Continue with Github
               </button>
             </div>
             <div className="relative  w-full text-center">

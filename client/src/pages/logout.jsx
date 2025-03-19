@@ -11,6 +11,7 @@ function Logout() {
   const router = useRouter();
   useEffect(() => {
     removeCookie("jwt");
+    removeCookie("auth_status")
     dispatch({ type: reducerCases.SET_USER, userInfo: undefined });
     window.location.href = window.location.origin;
   }, [removeCookie, dispatch, router]);

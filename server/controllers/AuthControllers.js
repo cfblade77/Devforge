@@ -1,7 +1,10 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import prisma from "../prismaClient.js";  // ✅ Corrected import
+// ✅ Corrected import path
+
 import { genSalt, hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
 import { renameSync } from "fs";
+
 
 const generatePassword = async (password) => {
   const salt = await genSalt();
@@ -18,38 +21,41 @@ const createToken = (email, userId) => {
 
 export const signup = async (req, res, next) => {
   try {
-    const prisma = new PrismaClient();
     const { email, password } = req.body;
-    if (email && password) {
-      const user = await prisma.user.create({
-        data: {
-          email,
-          password: await generatePassword(password),
-        },
-      });
-      return res.status(201).json({
-        user: { id: user?.id, email: user?.email },
-        jwt: createToken(email, user.id),
-      });
-    } else {
+
+    if (!email || !password) {
       return res.status(400).send("Email and Password Required");
     }
+
+    // ✅ Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).send("Email Already Registered");
+    }
+
+    // ✅ Create new user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: await generatePassword(password),
+      },
+    });
+
+    return res.status(201).json({
+      user: { id: user.id, email: user.email },
+      jwt: createToken(email, user.id),
+    });
   } catch (err) {
     console.log(err);
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return res.status(400).send("Email Already Registered");
-      }
-    } else {
-      return res.status(500).send("Internal Server Error");
-    }
-    throw err;
+    return res.status(500).send("Internal Server Error");
   }
 };
 
 export const login = async (req, res, next) => {
   try {
-    const prisma = new PrismaClient();
     const { email, password } = req.body;
     if (email && password) {
       const user = await prisma.user.findUnique({
@@ -66,9 +72,32 @@ export const login = async (req, res, next) => {
         return res.status(400).send("Invalid Password");
       }
 
+      // Create JWT token
+      const token = createToken(email, user.id);
+
+      // Set authentication cookies with consistent settings
+      res.cookie("jwt", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: maxAge * 1000,
+        sameSite: 'lax'
+      });
+
+      res.cookie("auth_status", "authenticated", {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: maxAge * 1000,
+        sameSite: 'lax'
+      });
+
       return res.status(200).json({
-        user: { id: user?.id, email: user?.email },
-        jwt: createToken(email, user.id),
+        user: {
+          id: user?.id,
+          email: user?.email,
+          username: user?.username || user?.email?.split('@')[0],
+          profileImage: user?.profileImage || `https://ui-avatars.com/api/?name=${user?.username || user?.email?.split('@')[0]}&background=random`
+        },
+        jwt: token,
       });
     } else {
       return res.status(400).send("Email and Password Required");
@@ -78,38 +107,57 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const getUserInfo = async (req, res, next) => {
+export const getUserInfo = async (req, res) => {
   try {
-    if (req?.userId) {
-      const prisma = new PrismaClient();
-      const user = await prisma.user.findUnique({
-        where: {
-          id: req.userId,
-        },
-      });
-      return res.status(200).json({
-        user: {
-          id: user?.id,
-          email: user?.email,
-          image: user?.profileImage,
-          username: user?.username,
-          fullName: user?.fullName,
-          description: user?.description,
-          isProfileSet: user?.isProfileInfoSet,
-        },
-      });
+    if (!req.userId) {
+      return res.status(401).json({ error: "Unauthorized access" });
     }
-  } catch (err) {
-    res.status(500).send("Internal Server Occured");
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true,
+        email: true,
+        profileImage: true,
+        username: true,
+        fullName: true,
+        description: true,
+        isProfileInfoSet: true,
+        githubUsername: true,
+        githubId: true,
+        isSocialLogin: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Prepare a consistent user object regardless of auth method
+    const userResponse = {
+      id: user.id,
+      email: user.email,
+      profileImage: user.profileImage || `https://ui-avatars.com/api/?name=${user.username || user.githubUsername || 'User'}&background=random`,
+      username: user.username || user.githubUsername || `user_${user.id}`,
+      fullName: user.fullName || user.username || user.githubUsername,
+      description: user.description || "",
+      isProfileInfoSet: user.isProfileInfoSet || user.isSocialLogin || false,
+    };
+
+    return res.status(200).json({ user: userResponse });
+  } catch (error) {
+    console.error("Error fetching user info:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
 
 export const setUserInfo = async (req, res, next) => {
   try {
     if (req?.userId) {
       const { userName, fullName, description } = req.body;
       if (userName && fullName && description) {
-        const prisma = new PrismaClient();
+
         const userNameValid = await prisma.user.findUnique({
           where: { username: userName },
         });
@@ -151,7 +199,7 @@ export const setUserImage = async (req, res, next) => {
         const date = Date.now();
         let fileName = "uploads/profiles/" + date + req.file.originalname;
         renameSync(req.file.path, fileName);
-        const prisma = new PrismaClient();
+
 
         await prisma.user.update({
           where: { id: req.userId },
@@ -165,5 +213,77 @@ export const setUserImage = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     res.status(500).send("Internal Server Occured");
+  }
+};
+
+
+export const githubAuthCallback = async (req, res) => {
+  try {
+    const { id, username, emails, photos, accessToken } = req.user;
+
+    const email = emails && emails.length > 0 ? emails[0].value : null;
+    const githubId = String(id);
+    const githubUsername = username || githubId;
+
+    // Check if a user with the same email already exists
+    let user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { githubId: githubId }, // Existing GitHub user
+          { email: email }, // Email exists (possibly from password login)
+        ],
+      },
+    });
+
+    if (!user) {
+      // ✅ Create new GitHub user if it doesn't exist
+      user = await prisma.user.create({
+        data: {
+          githubId: githubId,
+          githubUsername: githubUsername,
+          githubAccessToken: accessToken,
+          email: email,
+          profileImage: photos?.[0]?.value || null,
+          isSocialLogin: true,
+          username: githubUsername, // Use GitHub username instead of ID
+          isProfileInfoSet: true,
+        },
+      });
+    } else {
+      // ✅ If user exists, update their GitHub token & profile image
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          githubAccessToken: accessToken,
+          profileImage: photos?.[0]?.value || user.profileImage,
+          isProfileInfoSet: true,
+        },
+      });
+    }
+
+    // ✅ Create JWT token
+    const token = createToken(user.email, user.id);
+
+    // ✅ Set authentication cookies - ensure they're set correctly
+    // Use samesite=lax to ensure cookies work across redirects
+    res.cookie("jwt", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: maxAge * 1000,
+      sameSite: 'lax'
+    });
+
+    res.cookie("auth_status", "authenticated", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: maxAge * 1000,
+      sameSite: 'lax'
+    });
+
+    console.log("GitHub auth successful for user:", user.id);
+    res.redirect("http://localhost:3000/");
+  } catch (error) {
+    console.error("GitHub Auth Error:", error);
+    res.status(500).json({ error: "GitHub authentication failed" });
   }
 };

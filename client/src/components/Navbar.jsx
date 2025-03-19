@@ -46,25 +46,14 @@ function Navbar() {
   };
 
   const links = [
-    
+
     { linkName: "Explore", handler: "#", type: "link" },
 
     { linkName: "Become a Seller", handler: "#", type: "link" },
     { linkName: "Sign in", handler: handleLogin, type: "button" },
     { linkName: "Join", handler: handleSignup, type: "button2" },
   ];
-
-  useEffect(() => {
-    if (router.pathname === "/") {
-      const positionNavbar = () => {
-        window.pageYOffset > 0 ? setNavFixed(true) : setNavFixed(false);
-      };
-      window.addEventListener("scroll", positionNavbar);
-      return () => window.removeEventListener("scroll", positionNavbar);
-    } else {
-      setNavFixed(true);
-    }
-  }, [router.pathname]);
+  // ✅ Ensure it runs every time JWT changes
 
   const handleOrdersNavigate = () => {
     if (isSeller) router.push("/seller/orders");
@@ -81,42 +70,59 @@ function Navbar() {
     }
   };
 
+  // Remove the duplicate useEffect (lines 99-135 in your code)
+  // Keep only one useEffect for fetching user info
+
+  // In Navbar.js, modify the useEffect hook
   useEffect(() => {
-    if (cookies.jwt && !userInfo) {
+    // Check for either jwt cookie or auth_status cookie
+    const isAuthenticated = cookies.jwt || cookies.auth_status === "authenticated";
+    console.log("Authentication status:", isAuthenticated);
+
+    if (isAuthenticated && !userInfo) {
       const getUserInfo = async () => {
         try {
-          const {
-            data: { user },
-          } = await axios.post(
+          console.log("Fetching user info...");
+
+          const response = await axios.post(
             GET_USER_INFO,
             {},
             {
               withCredentials: true,
               headers: {
-                Authorization: `Bearer ${cookies.jwt}`,
+                Authorization: cookies.jwt ? `Bearer ${cookies.jwt}` : undefined,
               },
             }
           );
 
-          let projectedUserInfo = { ...user };
-          if (user.image) {
-            projectedUserInfo = {
-              ...projectedUserInfo,
-              imageName: HOST + "/" + user.image,
-            };
-          }
-          delete projectedUserInfo.image;
-          dispatch({
-            type: reducerCases.SET_USER,
-            userInfo: projectedUserInfo,
-          });
-          setIsLoaded(true);
-          console.log({ user });
-          if (user.isProfileSet === false) {
-            router.push("/profile");
+          if (response.data && response.data.user) {
+            let projectedUserInfo = { ...response.data.user };
+
+            // Ensure profile image is always present
+            projectedUserInfo.imageName = response.data.user.profileImage ||
+              `https://ui-avatars.com/api/?name=${response.data.user.username || 'User'}&background=random`;
+
+            // Ensure username is always present
+            projectedUserInfo.username = response.data.user.username || "Anonymous";
+
+            dispatch({
+              type: reducerCases.SET_USER,
+              userInfo: projectedUserInfo,
+            });
+
+            console.log("User Info Set:", projectedUserInfo);
           }
         } catch (err) {
-          console.log(err);
+          console.error("Error fetching user info:", err.response?.data || err.message);
+          // Handle stale or invalid tokens - don't redirect immediately
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            console.log("Auth failed, clearing cookies");
+            // Just clear the cookies but don't redirect, let the app handle it
+            document.cookie = "jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            document.cookie = "auth_status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+          }
+        } finally {
+          setIsLoaded(true);
         }
       };
 
@@ -124,7 +130,9 @@ function Navbar() {
     } else {
       setIsLoaded(true);
     }
-  }, [cookies, userInfo, dispatch]);
+  }, [cookies.jwt, cookies.auth_status, userInfo, dispatch]);
+
+
   const [isContextMenuVisible, setIsContextMenuVisible] = useState(false);
   useEffect(() => {
     const clickListener = (e) => {
@@ -164,24 +172,22 @@ function Navbar() {
     <>
       {isLoaded && (
         <nav
-          className={`w-full px-24 flex justify-between items-center py-6  top-0 z-30 transition-all duration-300 ${
-            navFixed || userInfo
-              ? "fixed bg-white border-b border-gray-200"
-              : "absolute bg-transparent border-transparent"
-          }`}
+          className={`w-full px-24 flex justify-between items-center py-6  top-0 z-30 transition-all duration-300 ${navFixed || userInfo
+            ? "fixed bg-white border-b border-gray-200"
+            : "absolute bg-transparent border-transparent"
+            }`}
         >
           <div>
             <Link href="/" className="font-bold text-2xl text-gray-200">
-            <h1>
-            DevForge
-            </h1>
-             
+              <h1>
+                DevForge
+              </h1>
+
             </Link>
           </div>
           <div
-            className={`flex ${
-              navFixed || userInfo ? "opacity-100" : "opacity-0"
-            }`}
+            className={`flex ${navFixed || userInfo ? "opacity-100" : "opacity-0"
+              }`}
           >
             <input
               type="text"
@@ -206,9 +212,8 @@ function Navbar() {
                 return (
                   <li
                     key={linkName}
-                    className={`${
-                      navFixed ? "text-black" : "text-white"
-                    } font-medium`}
+                    className={`${navFixed ? "text-black" : "text-white"
+                      } font-medium`}
                   >
                     {type === "link" && <Link href={handler}>{linkName}</Link>}
                     {type === "button" && (
@@ -217,11 +222,10 @@ function Navbar() {
                     {type === "button2" && (
                       <button
                         onClick={handler}
-                        className={`border   text-md font-semibold py-1 px-3 rounded-sm ${
-                          navFixed
-                            ? "border-[#1DBF73] text-[#1DBF73]"
-                            : "border-white text-white"
-                        } hover:bg-[#1DBF73] hover:text-white hover:border-[#1DBF73] transition-all duration-500`}
+                        className={`border   text-md font-semibold py-1 px-3 rounded-sm ${navFixed
+                          ? "border-[#1DBF73] text-[#1DBF73]"
+                          : "border-white text-white"
+                          } hover:bg-[#1DBF73] hover:text-white hover:border-[#1DBF73] transition-all duration-500`}
                       >
                         {linkName}
                       </button>
