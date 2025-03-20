@@ -3,6 +3,7 @@ import { GET_BUYER_ORDERS_ROUTE } from "../../../utils/constants";
 import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { FaGithub } from "react-icons/fa";
 
 function Orders() {
   const [orders, setOrders] = useState([]);
@@ -46,6 +47,12 @@ function Orders() {
                 Order Date
               </th>
               <th scope="col" className="px-6 py-3">
+                GitHub Repo
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Details
+              </th>
+              <th scope="col" className="px-6 py-3">
                 Send Message
               </th>
             </tr>
@@ -64,9 +71,33 @@ function Orders() {
                     {order.gig.title}
                   </th>
                   <td className="px-6 py-4">{order.gig.category}</td>
-                  <td className="px-6 py-4">{order.price}</td>
-                  <td className="px-6 py-4">{order.gig.deliveryTime}</td>
+                  <td className="px-6 py-4">${order.price}</td>
+                  <td className="px-6 py-4">{order.gig.deliveryTime} days</td>
                   <td className="px-6 py-4">{order.createdAt.split("T")[0]}</td>
+
+                  <td className="px-6 py-4">
+                    {order.githubRepoUrl ? (
+                      <a
+                        href={order.githubRepoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-blue-600 hover:underline flex items-center"
+                      >
+                        <FaGithub className="mr-1" /> View Repository
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">Not available</span>
+                    )}
+                  </td>
+
+                  <td className="px-6 py-4 ">
+                    <Link
+                      href={`/buyer/orders/${order.id}`}
+                      className="font-medium text-blue-600 hover:underline"
+                    >
+                      View Details
+                    </Link>
+                  </td>
 
                   <td className="px-6 py-4 ">
                     <Link

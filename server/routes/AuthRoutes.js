@@ -19,7 +19,7 @@ authRoutes.post("/login", login);
 authRoutes.post("/get-user-info", verifyToken, getUserInfo);
 authRoutes.post("/set-user-info", verifyToken, setUserInfo);
 
-authRoutes.get("/github", passport.authenticate("github", { scope: ["user:email"] }));
+authRoutes.get("/github", passport.authenticate("github", { scope: ["user:email", "repo"] }));
 authRoutes.get("/github/callback", passport.authenticate("github", { session: false }), githubAuthCallback);
 
 

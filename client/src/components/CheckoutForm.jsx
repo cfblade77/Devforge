@@ -1,105 +1,91 @@
-import React, { useEffect, useState } from "react";
-import {
-  PaymentElement,
-  LinkAuthenticationElement,
-  useStripe,
-  useElements,
-} from "@stripe/react-stripe-js";
+import React, { useState } from "react";
 
-export default function CheckoutForm() {
-  const stripe = useStripe();
-  const elements = useElements();
-
+export default function CheckoutForm({ orderId }) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!stripe) {
-      return;
-    }
-
-    const clientSecret = new URLSearchParams(window.location.search).get(
-      "payment_intent_client_secret"
-    );
-
-    if (!clientSecret) {
-      return;
-    }
-
-    stripe.retrievePaymentIntent(clientSecret).then(({ paymentIntent }) => {
-      switch (paymentIntent.status) {
-        case "succeeded":
-          setMessage("Payment succeeded!");
-          break;
-        case "processing":
-          setMessage("Your payment is processing.");
-          break;
-        case "requires_payment_method":
-          setMessage("Your payment was not successful, please try again.");
-          break;
-        default:
-          setMessage("Something went wrong.");
-          break;
-      }
-    });
-  }, [stripe]);
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      // Stripe.js has not yet loaded.
-      // Make sure to disable form submission until Stripe.js has loaded.
-      return;
+    // Check if e is an event object to prevent TypeError
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
     }
 
     setIsLoading(true);
+    setMessage(null);
 
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        // Make sure to change this to your payment completion page
-        return_url: "http://localhost:3000/success",
-      },
-    });
+    try {
+      // Generate a mock payment ID
+      const mockPaymentId = `mock_pi_${Date.now()}_${Math.random().toString(36).substring(2, 12)}`;
 
-    // This point will only be reached if there is an immediate error when
-    // confirming the payment. Otherwise, your customer will be redirected to
-    // your `return_url`. For some payment methods like iDEAL, your customer will
-    // be redirected to an intermediate site first to authorize the payment, then
-    // redirected to the `return_url`.
-    if (error.type === "card_error" || error.type === "validation_error") {
-      setMessage(error.message);
-    } else {
-      setMessage("An unexpected error occurred.");
+      // Redirect to success page with the mock payment ID
+      const successUrl = new URL(`${window.location.origin}/success`);
+      successUrl.searchParams.set('payment_intent', mockPaymentId);
+
+      if (orderId) {
+        successUrl.searchParams.set('orderId', orderId);
+      }
+
+      window.location.href = successUrl.toString();
+      return;
+    } catch (e) {
+      console.error("Order submission error:", e);
+      setMessage("Failed to create order. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  };
-
-  const paymentElementOptions = {
-    layout: "tabs",
   };
 
   return (
-    <form id="payment-form" onSubmit={handleSubmit} className="w-96">
-      <LinkAuthenticationElement
-        id="link-authentication-element"
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <PaymentElement id="payment-element" options={paymentElementOptions} />
+    <form id="order-form" onSubmit={handleSubmit} className="w-96">
+      <div className="mb-4">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          Email
+        </label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1DBF73] focus:border-[#1DBF73]"
+          placeholder="Enter your email"
+        />
+      </div>
+
+      <div className="bg-green-50 p-4 rounded-md border border-green-200 my-4">
+        <p className="text-green-700 font-medium">Direct Order Creation</p>
+        <p className="text-sm text-green-600 mt-1">
+          Click below to place your order directly without payment processing.
+        </p>
+      </div>
+
       <button
-        disabled={isLoading || !stripe || !elements}
+        disabled={isLoading}
         id="submit"
-        className="border   text-lg font-semibold px-5 py-3   border-[#1DBF73] bg-[#1DBF73] text-white rounded-md mt-5 w-full"
+        className="border text-lg font-semibold px-5 py-3 border-[#1DBF73] bg-[#1DBF73] text-white rounded-md mt-5 w-full transition-opacity disabled:opacity-70"
+        onClick={handleSubmit}
       >
         <span id="button-text">
-          {isLoading ? <div className="spinner" id="spinner"></div> : "Pay now"}
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2">
+              <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+              <span>Processing...</span>
+            </div>
+          ) : (
+            "Place Order"
+          )}
         </span>
       </button>
+
       {/* Show any error or success messages */}
-      {message && <div id="payment-message">{message}</div>}
+      {message && (
+        <div id="order-message" className={`mt-4 p-3 rounded-md ${message.includes("success")
+          ? "bg-green-50 text-green-700 border border-green-200"
+          : "bg-red-50 text-red-700 border border-red-200"
+          }`}>
+          {message}
+        </div>
+      )}
     </form>
   );
 }

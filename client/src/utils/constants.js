@@ -24,9 +24,11 @@ export const CHECK_USER_ORDERED_GIG_ROUTE = `${GIG_ROUTES}/check-gig-order`;
 export const ADD_REVIEW = `${GIG_ROUTES}/add-review`;
 
 export const CREATE_ORDER = `${ORDERS_ROUTES}/create`;
-export const ORDER_SUCCESS_ROUTE = `${ORDERS_ROUTES}/success`;
 export const GET_BUYER_ORDERS_ROUTE = `${ORDERS_ROUTES}/get-buyer-orders`;
 export const GET_SELLER_ORDERS_ROUTE = `${ORDERS_ROUTES}/get-seller-orders`;
+export const CREATE_GITHUB_REPO_ROUTE = `${ORDERS_ROUTES}/create-github-repo`;
+export const ORDER_SUCCESS_ROUTE = `${ORDERS_ROUTES}/confirm`;
+export const ORDER_DETAILS_ROUTE = `${ORDERS_ROUTES}/details`;
 
 export const GET_MESSAGES = `${MESSAGES_ROUTES}/get-messages`;
 export const ADD_MESSAGE = `${MESSAGES_ROUTES}/add-message`;

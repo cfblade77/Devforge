@@ -6,7 +6,11 @@ export const verifyToken = (req, res, next) => {
     let token = req.cookies?.jwt || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({ error: "You are not authenticated!" });
+      console.log("No authentication token found");
+      return res.status(401).json({
+        error: "You are not authenticated!",
+        redirectUrl: '/'
+      });
     }
 
     // ✅ If cookie contains an object, extract the actual JWT
@@ -16,15 +20,22 @@ export const verifyToken = (req, res, next) => {
 
     jwt.verify(token, process.env.JWT_KEY, (err, payload) => {
       if (err) {
-        return res.status(403).json({ error: "Token is not valid!" });
+        console.error("JWT verification failed:", err.message);
+        return res.status(403).json({
+          error: "Token is not valid!",
+          redirectUrl: '/'
+        });
       }
-      
+
       req.userId = payload?.userId;
       console.log("✅ User Authenticated:", req.userId); // ✅ Debugging log
       next();
     });
   } catch (err) {
     console.error("Token verification error:", err);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({
+      error: "Authentication error",
+      redirectUrl: '/'
+    });
   }
 };
