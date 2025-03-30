@@ -4,7 +4,10 @@ import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import React, { useEffect, useState } from "react";
-import { FaGithub, FaCalendar, FaMoneyBillWave, FaFolder, FaUser, FaClock } from "react-icons/fa";
+import { FaCalendar, FaMoneyBillWave, FaFolder, FaUser, FaClock } from "react-icons/fa";
+import TabSystem, { TabPanel } from "../../../components/Tabs/TabSystem";
+import GitHubSection from "../../../components/GitHub/GitHubSection";
+import TaskBoardSection from "../../../components/Tasks/TaskBoardSection";
 
 function OrderDetails() {
     const [orderData, setOrderData] = useState(null);
@@ -97,6 +100,12 @@ function OrderDetails() {
 
     const { order, commits } = orderData;
 
+    // Define tabs for the tab system
+    const tabs = [
+        { id: 'github', title: 'GitHub & Commits' },
+        { id: 'tasks', title: 'Task Management' }
+    ];
+
     return (
         <div className="min-h-[80vh] my-10 px-4 md:px-10 lg:px-20 xl:px-32 max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-8">
@@ -106,133 +115,70 @@ function OrderDetails() {
                 </Link>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Order Details Section */}
-                <div className="lg:col-span-2 bg-white shadow-md rounded-lg p-6">
-                    <h2 className="text-2xl font-semibold mb-4">Order Details</h2>
+            {/* Order Details Section */}
+            <div className="bg-white shadow-md rounded-lg p-6 mb-8">
+                <h2 className="text-2xl font-semibold mb-4">Order Details</h2>
 
-                    <div className="mb-6">
-                        <h3 className="text-xl font-medium mb-2">{order.gig.title}</h3>
-                        <p className="text-gray-600">{order.gig.description}</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div className="flex items-center">
-                            <FaFolder className="text-gray-500 mr-2" />
-                            <span className="text-gray-700 font-medium">Category:</span>
-                            <span className="ml-2">{order.gig.category}</span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <FaMoneyBillWave className="text-gray-500 mr-2" />
-                            <span className="text-gray-700 font-medium">Price:</span>
-                            <span className="ml-2">${order.price}</span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <FaClock className="text-gray-500 mr-2" />
-                            <span className="text-gray-700 font-medium">Delivery Time:</span>
-                            <span className="ml-2">{order.gig.deliveryTime} days</span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <FaCalendar className="text-gray-500 mr-2" />
-                            <span className="text-gray-700 font-medium">Order Date:</span>
-                            <span className="ml-2">{new Date(order.createdAt).toLocaleDateString()}</span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <FaUser className="text-gray-500 mr-2" />
-                            <span className="text-gray-700 font-medium">Buyer:</span>
-                            <span className="ml-2">{order.buyer.fullName || order.buyer.username}</span>
-                        </div>
-                    </div>
-
-                    {/* GitHub Repository Section */}
-                    <div className="border-t pt-4">
-                        <h3 className="text-lg font-medium mb-2">GitHub Repository</h3>
-                        {order.githubRepoUrl ? (
-                            <div>
-                                <a
-                                    href={order.githubRepoUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
-                                >
-                                    <FaGithub className="mr-2" /> View Repository
-                                </a>
-                                <p className="mt-2 text-sm text-gray-600">
-                                    Repository URL: <a href={order.githubRepoUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{order.githubRepoUrl}</a>
-                                </p>
-                            </div>
-                        ) : (
-                            <div>
-                                <button
-                                    onClick={handleCreateRepo}
-                                    disabled={isCreatingRepo}
-                                    className="inline-flex items-center bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors disabled:bg-gray-400"
-                                >
-                                    <FaGithub className="mr-2" />
-                                    {isCreatingRepo ? "Creating..." : "Create Repository"}
-                                </button>
-                                {repoError && (
-                                    <div className="mt-2 p-3 bg-red-50 text-red-700 border border-red-200 rounded-md text-sm">
-                                        <p className="font-medium">Error creating repository:</p>
-                                        <p>{repoError}</p>
-                                        <p className="mt-2 text-xs">
-                                            Make sure you've connected your GitHub account. If you haven't, please log out and log in with GitHub.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                <div className="mb-6">
+                    <h3 className="text-xl font-medium mb-2">{order.gig.title}</h3>
+                    <p className="text-gray-600">{order.gig.description}</p>
                 </div>
 
-                {/* Commits History Section */}
-                <div className="lg:col-span-1 bg-white shadow-md rounded-lg p-6 h-fit">
-                    <h2 className="text-2xl font-semibold mb-4">Commits History</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div className="flex items-center">
+                        <FaFolder className="text-gray-500 mr-2" />
+                        <span className="text-gray-700 font-medium">Category:</span>
+                        <span className="ml-2">{order.gig.category}</span>
+                    </div>
 
-                    {commits && commits.length > 0 ? (
-                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                            {commits.map((commit) => (
-                                <div key={commit.sha} className="border-b pb-3">
-                                    <div className="flex items-start mb-1">
-                                        {commit.avatar_url && (
-                                            <img
-                                                src={commit.avatar_url}
-                                                alt={commit.author}
-                                                className="w-8 h-8 rounded-full mr-2"
-                                            />
-                                        )}
-                                        <div>
-                                            <p className="font-medium">{commit.author}</p>
-                                            <p className="text-sm text-gray-500">
-                                                {new Date(commit.date).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <p className="mt-1 text-gray-700">{commit.message}</p>
-                                    <a
-                                        href={commit.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-500 text-sm hover:underline mt-1 inline-block"
-                                    >
-                                        View commit
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-gray-500">
-                            {order.githubRepoUrl
-                                ? "No commits available for this repository yet. Commits will appear here after code is pushed."
-                                : "Create a GitHub repository to track commits"}
-                        </p>
-                    )}
+                    <div className="flex items-center">
+                        <FaMoneyBillWave className="text-gray-500 mr-2" />
+                        <span className="text-gray-700 font-medium">Price:</span>
+                        <span className="ml-2">${order.price}</span>
+                    </div>
+
+                    <div className="flex items-center">
+                        <FaClock className="text-gray-500 mr-2" />
+                        <span className="text-gray-700 font-medium">Delivery Time:</span>
+                        <span className="ml-2">{order.gig.deliveryTime} days</span>
+                    </div>
+
+                    <div className="flex items-center">
+                        <FaCalendar className="text-gray-500 mr-2" />
+                        <span className="text-gray-700 font-medium">Order Date:</span>
+                        <span className="ml-2">{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+
+                    <div className="flex items-center">
+                        <FaUser className="text-gray-500 mr-2" />
+                        <span className="text-gray-700 font-medium">Buyer:</span>
+                        <span className="ml-2">{order.buyer.fullName || order.buyer.username}</span>
+                    </div>
                 </div>
             </div>
+
+            {/* Tab System for GitHub and Tasks */}
+            <TabSystem tabs={tabs}>
+                <TabPanel tabId="github">
+                    <GitHubSection
+                        order={order}
+                        commits={commits}
+                        isUserSeller={true}
+                        handleCreateRepo={handleCreateRepo}
+                        isCreatingRepo={isCreatingRepo}
+                        repoError={repoError}
+                    />
+                </TabPanel>
+
+                <TabPanel tabId="tasks">
+                    <TaskBoardSection
+                        orderId={order.id}
+                        sellerId={order.gig.createdBy.id}
+                        buyerId={order.buyer.id}
+                        isUserSeller={true}
+                    />
+                </TabPanel>
+            </TabSystem>
 
             {/* Message Link */}
             <div className="mt-8 text-center">

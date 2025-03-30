@@ -7,6 +7,7 @@ export const GIG_ROUTES = `${API_URL}/gigs`;
 export const ORDERS_ROUTES = `${API_URL}/orders`;
 export const MESSAGES_ROUTES = `${API_URL}/messages`;
 export const DASHBOARD_DATA_ROUTES = `${API_URL}/dashboard`;
+export const TASKS_ROUTES = `${API_URL}/tasks`;
 
 export const LOGIN_ROUTE = `${AUTH_ROUTES}/login`;
 export const SIGNUP_ROUTE = `${AUTH_ROUTES}/signup`;
@@ -36,3 +37,9 @@ export const GET_UNREAD_MESSAGES = `${MESSAGES_ROUTES}/unread-messages`;
 export const MARK_AS_READ_ROUTE = `${MESSAGES_ROUTES}/mark-as-read`;
 
 export const GET_SELLER_DASHBOARD_DATA = `${DASHBOARD_DATA_ROUTES}/seller`;
+
+// Task management routes
+export const GET_ORDER_TASKS = `${TASKS_ROUTES}/order`;
+export const CREATE_TASK = `${TASKS_ROUTES}/create`;
+export const UPDATE_TASK = `${TASKS_ROUTES}/update`;
+export const DELETE_TASK = `${TASKS_ROUTES}/delete`;

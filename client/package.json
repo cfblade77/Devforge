@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@devexpress/dx-react-chart": "^4.0.10",
+    "@devexpress/dx-react-core": "^4.0.10",
     "@stripe/react-stripe-js": "^2.1.0",
     "@stripe/stripe-js": "^1.52.1",
     "@types/node": "18.15.11",
@@ -18,11 +20,14 @@
     "eslint": "8.37.0",
     "eslint-config-next": "13.2.4",
     "firebase": "^9.19.1",
+    "gantt-task-react": "^0.3.9",
     "next": "13.2.4",
     "react": "18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
     "react-cookie": "^4.1.1",
     "react-dom": "18.2.0",
     "react-icons": "^4.8.0",
+    "react-toastify": "^11.0.5",
     "typescript": "5.0.3"
   },
   "devDependencies": {

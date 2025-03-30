@@ -26,6 +26,8 @@ model User {
   messagesSent      Message[] @relation("sentMessages")
   orders            Orders[]
   reviews           Reviews[]
+  createdTasks      Task[]    @relation("createdTasks")
+  assignedTasks     Task[]    @relation("assignedTasks")
 }
 
 model Gigs {
@@ -58,6 +60,7 @@ model Orders {
   githubRepoName    String?
   githubRepoUrl     String?
   messages          Message[]
+  tasks             Task[]
   buyer             User      @relation(fields: [buyerId], references: [id])
   gig               Gigs      @relation(fields: [gigId], references: [id])
 }
@@ -84,4 +87,25 @@ model Message {
   order       Orders   @relation(fields: [orderId], references: [id])
   recipient   User     @relation("receivedMessages", fields: [recipientId], references: [id])
   sender      User     @relation("sentMessages", fields: [senderId], references: [id])
+}
+
+model Task {
+  id           Int       @id @default(autoincrement())
+  title        String
+  description  String?
+  status       String    @default("TODO") // TODO, IN_PROGRESS, COMPLETED
+  deadline     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  orderId      Int
+  createdById  Int
+  assignedToId Int
+  isSuggestion Boolean   @default(false)
+  isApproved   Boolean   @default(true)
+  order        Orders    @relation(fields: [orderId], references: [id])
+  createdBy    User      @relation("createdTasks", fields: [createdById], references: [id])
+  assignedTo   User      @relation("assignedTasks", fields: [assignedToId], references: [id])
+
+  @@index([orderId])
+  @@index([status])
 }
