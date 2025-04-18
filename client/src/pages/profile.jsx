@@ -22,7 +22,14 @@ function Profile() {
     userName: "",
     fullName: "",
     description: "",
+    skills: [],
+    codingLanguages: [],
+    yearsOfExperience: 0,
+    certificates: [],
   });
+
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
 
   useEffect(() => {
     const handleData = { ...data };
@@ -49,6 +56,20 @@ function Profile() {
     }
   }, [userInfo]);
 
+  useEffect(() => {
+    // Initialize chat session when component mounts
+    const initChatSession = async () => {
+      try {
+        await axios.get('/api/chat', { withCredentials: true });
+        console.log('Chat session initialized');
+      } catch (err) {
+        console.error('Failed to initialize chat session:', err);
+      }
+    };
+    
+    initChatSession();
+  }, []);
+
   const handleFile = (e) => {
     let file = e.target.files;
     const fileType = file[0]["type"];
@@ -62,6 +83,12 @@ function Profile() {
   };
 
   const setProfile = async () => {
+    // Validate required fields
+    if (!data.userName || !data.fullName || !data.description) {
+      setErrorMessage("Username, Full Name, and Description are required fields");
+      return;
+    }
+  
     try {
       const response = await axios.post(
         SET_USER_INFO,
@@ -85,7 +112,7 @@ function Profile() {
           });
           imageName = img;
         }
-
+  
         dispatch({
           type: reducerCases.SET_USER,
           userInfo: {
@@ -94,12 +121,49 @@ function Profile() {
             image: imageName.length ? HOST + "/" + imageName : false,
           },
         });
-
+  
         router.push("/");
       }
     } catch (err) {
       console.error(err);
+      if (err.response && err.response.data) {
+        setErrorMessage(err.response.data);
+      } else {
+        setErrorMessage("An error occurred while saving your profile");
+      }
     }
+  };
+
+  const handleChatSubmit = async () => {
+    if (chatInput.trim() === "") return;
+
+    // Add user message to chat
+    setChatMessages((prev) => [...prev, { sender: "user", text: chatInput }]);
+    
+    try {
+      // Send message to chatbot backend
+      const response = await axios.post("/api/chat", { 
+        message: chatInput
+      }, { withCredentials: true }); // Add withCredentials for cookies
+      
+      // Add bot response to chat
+      setChatMessages((prev) => [...prev, { sender: "bot", text: response.data.response }]);
+      
+      // Update form fields with extracted data from resumeData (not updatedFields)
+      if (response.data.resumeData) {
+        setData(prevData => ({
+          ...prevData,
+          skills: response.data.resumeData.skills || prevData.skills,
+          codingLanguages: response.data.resumeData.codingLanguages || prevData.codingLanguages,
+          yearsOfExperience: response.data.resumeData.yearsOfExperience || prevData.yearsOfExperience,
+          certificates: response.data.resumeData.certificates || prevData.certificates
+        }));
+      }
+    } catch (err) {
+      // ...existing error handling...
+    }
+    
+    setChatInput("");
   };
 
   const inputClassName =
@@ -115,7 +179,7 @@ function Profile() {
               <span className="text-red-600 font-bold">{errorMessage}</span>
             </div>
           )}
-          <h2 className="text-3xl">Welocme to Devforge</h2>
+          <h2 className="text-3xl">Welcome to Devforge</h2>
           <h4 className="text-xl">
             Please complete your profile to get started
           </h4>
@@ -131,7 +195,14 @@ function Profile() {
               <div className="bg-purple-500 h-36 w-36 flex items-center justify-center rounded-full relative">
                 {image ? (
                   <Image
-                    src={URL.createObjectURL(image)}
+                    src={URL.createObjectURL(image)} // For newly uploaded images
+                    alt="profile"
+                    fill
+                    className="rounded-full"
+                  />
+                ) : userInfo.imageName ? (
+                  <Image
+                    src={userInfo.imageName.startsWith("http") ? userInfo.imageName : `/${userInfo.imageName}`} // Ensure proper formatting
                     alt="profile"
                     fill
                     className="rounded-full"
@@ -141,35 +212,6 @@ function Profile() {
                     {userInfo.email[0].toUpperCase()}
                   </span>
                 )}
-                <div
-                  className={`absolute bg-slate-400 h-full w-full rounded-full flex items-center justify-center   transition-all duration-100  ${
-                    imageHover ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <span
-                    className={` flex items-center justify-center  relative`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-12 h-12 text-white absolute"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <input
-                      type="file"
-                      onChange={handleFile}
-                      className="opacity-0"
-                      multiple={true}
-                      name="profileImage"
-                    />
-                  </span>
-                </div>
               </div>
             </div>
             <div className="flex gap-4 w-[500px]">
@@ -216,6 +258,98 @@ function Profile() {
                 placeholder="description"
               ></textarea>
             </div>
+            <div>
+              <label className={labelClassName} htmlFor="skills">Skills</label>
+              <input
+                className={inputClassName}
+                type="text"
+                name="skills"
+                id="skills"
+                placeholder="Enter skills (comma-separated)"
+                value={data.skills.join(", ")}
+                onChange={(e) => setData({ ...data, skills: e.target.value.split(",").map(skill => skill.trim()) })}
+              />
+            </div>
+
+            <div>
+              <label className={labelClassName} htmlFor="codingLanguages">Coding Languages</label>
+              <input
+                className={inputClassName}
+                type="text"
+                name="codingLanguages"
+                id="codingLanguages"
+                placeholder="Enter coding languages (comma-separated)"
+                value={data.codingLanguages.join(", ")}
+                onChange={(e) => setData({ ...data, codingLanguages: e.target.value.split(",").map(lang => lang.trim()) })}
+              />
+            </div>
+
+            <div>
+              <label className={labelClassName} htmlFor="yearsOfExperience">Years of Experience</label>
+              <input
+                className={inputClassName}
+                type="number"
+                name="yearsOfExperience"
+                id="yearsOfExperience"
+                placeholder="Enter years of experience"
+                value={data.yearsOfExperience}
+                onChange={(e) => setData({ ...data, yearsOfExperience: parseInt(e.target.value) })}
+              />
+            </div>
+
+            <div>
+              <label className={labelClassName} htmlFor="certificates">Certificates</label>
+              <input
+                className={inputClassName}
+                type="text"
+                name="certificates"
+                id="certificates"
+                placeholder="Enter certificates (comma-separated)"
+                value={data.certificates.join(", ")}
+                onChange={(e) => setData({ ...data, certificates: e.target.value.split(",").map(cert => cert.trim()) })}
+              />
+            </div>
+
+            {/* Chatbot Section */}
+            <div className="w-[500px] border p-4 rounded-lg">
+              <h3 className="text-lg font-bold mb-2">Chatbot Assistant</h3>
+              <div className="h-64 overflow-y-auto border p-2 mb-2">
+                {chatMessages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`${
+                      msg.sender === "user" ? "text-right" : "text-left"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block p-2 rounded-lg ${
+                        msg.sender === "user"
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      }`}
+                    >
+                      {msg.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className={inputClassName}
+                  placeholder="Type your message..."
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                />
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                  onClick={handleChatSubmit}
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+
             <button
               className="border   text-lg font-semibold px-5 py-3   border-[#1DBF73] bg-[#1DBF73] text-white rounded-md"
               type="button"

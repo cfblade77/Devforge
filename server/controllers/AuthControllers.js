@@ -155,40 +155,37 @@ export const getUserInfo = async (req, res) => {
 export const setUserInfo = async (req, res, next) => {
   try {
     if (req?.userId) {
-      const { userName, fullName, description } = req.body;
-      if (userName && fullName && description) {
+      const { userName, fullName, description, skills, codingLanguages, yearsOfExperience, certificates } = req.body;
 
+      if (userName && fullName && description) {
         const userNameValid = await prisma.user.findUnique({
           where: { username: userName },
         });
         if (userNameValid) {
           return res.status(200).json({ userNameError: true });
         }
+
         await prisma.user.update({
           where: { id: req.userId },
           data: {
             username: userName,
             fullName,
             description,
-            isProfileInfoSet: true,
+            skills: skills || [],
+            codingLanguages: codingLanguages || [],
+            yearsOfExperience: yearsOfExperience || 0,
+            certificates: certificates || [],
           },
         });
+
         return res.status(200).send("Profile data updated successfully.");
       } else {
-        return res
-          .status(400)
-          .send("Username, Full Name and description should be included.");
+        return res.status(400).send("Username, Full Name, and description should be included.");
       }
     }
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === "P2002") {
-        return res.status(400).json({ userNameError: true });
-      }
-    } else {
-      return res.status(500).send("Internal Server Error");
-    }
-    throw err;
+    console.error("Error updating user info:", err);
+    return res.status(500).send("Internal Server Error");
   }
 };
 

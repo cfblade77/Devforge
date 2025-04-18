@@ -28,6 +28,10 @@ model User {
   reviews           Reviews[]
   createdTasks      Task[]    @relation("createdTasks")
   assignedTasks     Task[]    @relation("assignedTasks")
+  skills            String[]  // New field
+  codingLanguages   String[]  // New field
+  yearsOfExperience Int       @default(0) // New field
+  certificates      String[]  // New field
 }
 
 model Gigs {
