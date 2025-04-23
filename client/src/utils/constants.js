@@ -15,6 +15,7 @@ export const SOCIAL_LOGIN_ROUTE = `${AUTH_ROUTES}/social-login`;
 export const GET_USER_INFO = `${AUTH_ROUTES}/get-user-info`;
 export const SET_USER_INFO = `${AUTH_ROUTES}/set-user-info`;
 export const SET_USER_IMAGE = `${AUTH_ROUTES}/set-user-image`;
+export const UPDATE_CLIENT_COMPANY = `${AUTH_ROUTES}/update-client-company`;
 
 export const ADD_GIG_ROUTE = `${GIG_ROUTES}/add`;
 export const GET_USER_GIGS_ROUTE = `${GIG_ROUTES}/get-user-gigs`;

@@ -5,6 +5,7 @@ import {
   editGig,
   getGigData,
   getUserAuthGigs,
+  getUserProfileGig,
   searchGigs,
   addReview,
 } from "../controllers/GigsController.js";
@@ -17,6 +18,7 @@ export const gigRoutes = Router();
 
 gigRoutes.post("/add", verifyToken, upload.array("images"), addGig);
 gigRoutes.get("/get-user-gigs", verifyToken, getUserAuthGigs);
+gigRoutes.get("/get-user-profile/:userId", getUserProfileGig);
 gigRoutes.get("/get-gig-data/:gigId", getGigData);
 gigRoutes.put("/edit-gig/:gigId", verifyToken, upload.array("images"), editGig);
 gigRoutes.get("/search-gigs", searchGigs);

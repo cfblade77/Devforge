@@ -42,7 +42,20 @@ function AuthWrapper({ type }) {
         dispatch({ type: reducerCases.CLOSE_AUTH_MODAL });
 
         if (user) {
-          dispatch({ type: reducerCases.SET_USER, userInfo: user });
+          const isSeller = user.role === 'freelancer';
+
+          dispatch({
+            type: reducerCases.SET_USER,
+            userInfo: {
+              ...user,
+              imageName: user.profileImage || `https://ui-avatars.com/api/?name=${user.username || user.email?.split('@')[0]}&background=random`
+            }
+          });
+
+          if (isSeller) {
+            dispatch({ type: reducerCases.SWITCH_MODE });
+          }
+
           window.location.reload();
         }
       }

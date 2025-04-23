@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -21,6 +22,7 @@ model User {
   githubAccessToken String?
   githubId          String?   @unique
   githubUsername    String?
+  role              String    @default("client")
   gigs              Gigs[]
   messagesReceived  Message[] @relation("receivedMessages")
   messagesSent      Message[] @relation("sentMessages")
@@ -28,28 +30,30 @@ model User {
   reviews           Reviews[]
   createdTasks      Task[]    @relation("createdTasks")
   assignedTasks     Task[]    @relation("assignedTasks")
-  skills            String[]  // New field
-  codingLanguages   String[]  // New field
-  yearsOfExperience Int       @default(0) // New field
-  certificates      String[]  // New field
+  // Client-specific fields
+  companyName        String?
+  companyDescription String?
+  industry           String?
+  companySize        String?
+  website            String?
+  companyLocation    String?
+  hourlyRate         Float?
 }
 
 model Gigs {
-  id           Int       @id @default(autoincrement())
-  title        String
-  description  String
-  category     String
-  deliveryTime Int
-  revisions    Int
-  features     String[]
-  price        Int
-  shortDesc    String
-  createdAt    DateTime  @default(now())
-  images       String[]
-  userId       Int
-  createdBy    User      @relation(fields: [userId], references: [id])
-  orders       Orders[]
-  reviews      Reviews[]
+  id                Int       @id @default(autoincrement())
+  createdAt         DateTime  @default(now())
+  userId            Int
+  isProfileGig      Boolean   @default(false)
+  skills            String[]  // Moved from User
+  codingLanguages   String[]  // Moved from User
+  yearsOfExperience Int       @default(0) // Moved from User
+  certificates      String[]  // Moved from User
+  hourlyRate        Float?    // Added hourlyRate to Gigs
+  createdBy         User      @relation(fields: [userId], references: [id])
+  orders            Orders[]
+  reviews           Reviews[]
+  embedding         Unsupported("Vector(768)")
 }
 
 model Orders {
@@ -59,7 +63,8 @@ model Orders {
   paymentIntent     String    @unique
   isCompleted       Boolean   @default(false)
   gigId             Int
-  price             Int
+  price             Int       // Likely the TOTAL price of the order
+  hourlyRate        Float?    // Added hourlyRate specific to this Order
   githubRepoCreated Boolean   @default(false)
   githubRepoName    String?
   githubRepoUrl     String?

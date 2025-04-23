@@ -3,12 +3,21 @@ import { categories } from "../../../utils/categories";
 import { ADD_GIG_ROUTE } from "../../../utils/constants";
 import axios from "axios";
 import { useRouter } from "next/router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCookies } from "react-cookie";
 
 function CreateGigs() {
   const [cookies] = useCookies();
   const router = useRouter();
+
+  // Add a redirect effect to prevent accessing this page directly
+  useEffect(() => {
+    // Redirect to seller gigs page
+    router.push("/seller/gigs");
+  }, [router]);
+
+  // The rest of the component is now inaccessible due to the redirect
+
   const inputClassName =
     "block p-4 w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50  focus:ring-blue-500 focus:border-blue-500";
   const labelClassName = "mb-2 text-lg font-medium text-gray-900  ";
@@ -40,65 +49,65 @@ function CreateGigs() {
       setData((prev) => ({ ...prev, feature: "" })); // Clear input after adding
     }
   };
-  
-const addGig = async () => {
-  try {
-    const { category, description, price, revisions, time, title, shortDesc } = data;
 
-    // Validation: Ensure no field is left empty
-    if (!title.trim()) return alert("Please enter a gig title.");
-    if (!category) return alert("Please select a category.");
-    if (!description.trim()) return alert("Please enter a gig description.");
-    if (!shortDesc.trim()) return alert("Please enter a short description.");
-    if (!features.length) return alert("Please add at least one feature.");
-    if (!files.length) return alert("Please upload at least one image.");
-    if (price <= 0) return alert("Please enter a valid price.");
-    if (revisions <= 0) return alert("Please enter a valid number of revisions.");
-    if (time <= 0) return alert("Please enter a valid delivery time.");
+  const addGig = async () => {
+    try {
+      const { category, description, price, revisions, time, title, shortDesc } = data;
 
-    // const queryParams = new URLSearchParams({
-    //   title,
-    //   description,
-    //   category,
-    //   features: JSON.stringify(features), // Convert array to string
-    //   price,
-    //   revisions,
-    //   time,
-    //   shortDesc,
-    // });
+      // Validation: Ensure no field is left empty
+      if (!title.trim()) return alert("Please enter a gig title.");
+      if (!category) return alert("Please select a category.");
+      if (!description.trim()) return alert("Please enter a gig description.");
+      if (!shortDesc.trim()) return alert("Please enter a short description.");
+      if (!features.length) return alert("Please add at least one feature.");
+      if (!files.length) return alert("Please upload at least one image.");
+      if (price <= 0) return alert("Please enter a valid price.");
+      if (revisions <= 0) return alert("Please enter a valid number of revisions.");
+      if (time <= 0) return alert("Please enter a valid delivery time.");
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("images", file));
+      // const queryParams = new URLSearchParams({
+      //   title,
+      //   description,
+      //   category,
+      //   features: JSON.stringify(features), // Convert array to string
+      //   price,
+      //   revisions,
+      //   time,
+      //   shortDesc,
+      // });
 
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("category", category);
-    formData.append("features", JSON.stringify(features));
-    formData.append("price", price);
-    formData.append("revisions", revisions);
-    formData.append("time", time);
-    formData.append("shortDesc", shortDesc);
+      const formData = new FormData();
+      files.forEach((file) => formData.append("images", file));
 
-    const response = await axios.post(
-      ADD_GIG_ROUTE,
-      formData,
-      {
-        withCredentials: true,
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${cookies.jwt}`,
-        },
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("category", category);
+      formData.append("features", JSON.stringify(features));
+      formData.append("price", price);
+      formData.append("revisions", revisions);
+      formData.append("time", time);
+      formData.append("shortDesc", shortDesc);
+
+      const response = await axios.post(
+        ADD_GIG_ROUTE,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${cookies.jwt}`,
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        router.push("/seller/gigs");
       }
-    );
-
-    if (response.status === 201) {
-      router.push("/seller/gigs");
+    } catch (error) {
+      console.error("Error creating gig:", error);
+      alert(error.response?.data?.message || "Error creating gig. Please try again.");
     }
-  } catch (error) {
-    console.error("Error creating gig:", error);
-    alert(error.response?.data?.message || "Error creating gig. Please try again.");
-  }
-};
+  };
   return (
     <div className="min-h-[80vh] my-10 mt-0 px-32 ">
       <h1 className="text-6xl text-gray-900 mb-5">Create a new Gig</h1>

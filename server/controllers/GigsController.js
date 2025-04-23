@@ -1,9 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 
 import { existsSync, renameSync, unlinkSync } from "fs";
+import { generateGigEmbeddings, embedToPostgresVector } from '../utils/embeddings.js';
 
 export const addGig = async (req, res, next) => {
-
   let prisma;
   try {
     if (!req.files || !req.files.length) {
@@ -18,60 +18,56 @@ export const addGig = async (req, res, next) => {
       return newFileName;
     });
 
-    // Get data from request body instead of query  
+    // Get data from request body
     const {
-      title,
-      description,
-      category,
-      features,
-      price,
-      revisions,
-      time,
-      shortDesc,
+      skills = [],
+      codingLanguages = [],
+      yearsOfExperience = 0,
+      certificates = [],
+      hourlyRate,
+      isProfileGig = false
     } = req.body;
-
-    console.log("Received gig data:", {
-      title,
-      description,
-      category,
-      features,
-      price,
-      revisions,
-      time,
-      shortDesc,
-    });
-
-    // Validate required fields
-    if (!title || !description || !category || !features || !price ||
-      !revisions || !time || !shortDesc) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
 
     prisma = new PrismaClient();
 
-    // Parse features from JSON string
-    const parsedFeatures = JSON.parse(features);
+    // Generate embeddings for the gig data
+    const gigData = {
+      skills,
+      codingLanguages,
+      certificates,
+      yearsOfExperience: parseInt(yearsOfExperience)
+    };
 
-    const gig = await prisma.gigs.create({
-      data: {
-        title,
-        description,
-        deliveryTime: parseInt(time),
-        category,
-        features: parsedFeatures,
-        price: parseInt(price),
-        shortDesc,
-        revisions: parseInt(revisions),
-        createdBy: { connect: { id: req.userId } },
-        images: fileNames,
-      },
-    });
+    const embeddings = await generateGigEmbeddings(gigData);
+    const postgresVector = embedToPostgresVector(embeddings);
+
+    // Create gig with embeddings
+    const gig = await prisma.$executeRaw`
+      INSERT INTO "Gigs" (
+        "userId",
+        "skills",
+        "codingLanguages",
+        "yearsOfExperience",
+        "certificates",
+        "hourlyRate",
+        "isProfileGig",
+        "embedding"
+      ) VALUES (
+        ${req.userId},
+        ${skills}::text[],
+        ${codingLanguages}::text[],
+        ${parseInt(yearsOfExperience)},
+        ${certificates}::text[],
+        ${hourlyRate ? parseFloat(hourlyRate) : null},
+        ${isProfileGig},
+        ${postgresVector}::vector
+      ) RETURNING *;
+    `;
 
     return res.status(201).json({
       message: "Successfully created the gig.",
       gig
     });
-
   } catch (err) {
     console.error("Error creating gig:", err);
     return res.status(500).json({
@@ -84,12 +80,41 @@ export const addGig = async (req, res, next) => {
 };
 
 export const getUserAuthGigs = async (req, res, next) => {
+  let prisma;
   try {
     if (req.userId) {
-      const prisma = new PrismaClient();
+      prisma = new PrismaClient();
+
+      // Get query param to determine if we should include profile gigs
+      const includeProfileGigs = req.query.includeProfileGigs === 'true';
+
+      // Check if the isProfileGig field exists in the schema
+      let hasProfileGigField = false;
+      try {
+        // Check if column exists
+        const result = await prisma.$queryRaw`
+          SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'Gigs' 
+            AND column_name = 'isProfileGig'
+          );
+        `;
+        hasProfileGigField = result[0].exists;
+      } catch (error) {
+        console.warn("Could not check schema, assuming isProfileGig doesn't exist", error);
+        hasProfileGigField = false;
+      }
+
+      // If the field exists and we don't want profile gigs, filter them out
+      // Otherwise, return all gigs
       const user = await prisma.user.findUnique({
         where: { id: req.userId },
-        include: { gigs: true },
+        include: {
+          gigs: hasProfileGigField && !includeProfileGigs ? {
+            where: { isProfileGig: false }
+          } : true
+        },
       });
       return res.status(200).json({ gigs: user?.gigs ?? [] });
     }
@@ -97,6 +122,86 @@ export const getUserAuthGigs = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(500).send("Internal Server Error");
+  } finally {
+    if (prisma) await prisma.$disconnect();
+  }
+};
+
+export const getUserProfileGig = async (req, res, next) => {
+  let prisma;
+  try {
+    const userId = parseInt(req.params.userId);
+    if (isNaN(userId)) {
+      return res.status(400).send("Valid user ID is required.");
+    }
+
+    prisma = new PrismaClient();
+
+    // First verify the user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!userExists) {
+      return res.status(404).json({
+        error: "User not found",
+        message: `No user exists with ID ${userId}. Please check the userId and try again.`
+      });
+    }
+
+    // First verify the schema includes isProfileGig
+    try {
+      // Try to query a gig with isProfileGig
+      await prisma.$executeRaw`SELECT exists(SELECT 1 FROM information_schema.columns WHERE table_name='Gigs' AND column_name='isProfileGig');`;
+    } catch (error) {
+      console.error("Schema error:", error);
+      return res.status(500).json({
+        message: "Database schema is missing required fields. Please run the migration script.",
+        error: error.message
+      });
+    }
+
+    // Get the user's profile gig
+    try {
+      const profileGig = await prisma.gigs.findFirst({
+        where: {
+          userId: userId,
+          isProfileGig: true
+        },
+        include: {
+          createdBy: {
+            select: {
+              username: true,
+              fullName: true,
+              profileImage: true
+            }
+          }
+        }
+      });
+
+      if (!profileGig) {
+        return res.status(404).json({ message: "Profile gig not found for this user." });
+      }
+
+      return res.status(200).json({ profileGig });
+    } catch (queryError) {
+      console.error("Error querying profile gig:", queryError);
+
+      // If the error is related to missing columns, give a helpful message
+      if (queryError.message && queryError.message.includes("Unknown")) {
+        return res.status(500).json({
+          message: "Database schema is missing required fields. Please run the migration script.",
+          details: queryError.message
+        });
+      }
+
+      throw queryError; // Re-throw for the outer catch block
+    }
+  } catch (err) {
+    console.error("Error fetching profile gig:", err);
+    return res.status(500).send("Internal Server Error");
+  } finally {
+    if (prisma) await prisma.$disconnect();
   }
 };
 
@@ -152,108 +257,50 @@ export const getGigData = async (req, res, next) => {
 export const editGig = async (req, res, next) => {
   let prisma;
   try {
-    if (!req.files || !req.files.length) {
-      return res.status(400).json({ message: "Please upload at least one image" });
-    }
-
-    // Handle file uploads
-    const fileNames = req.files.map(file => {
-      const date = Date.now();
-      const newFileName = date + file.originalname;
-      renameSync(file.path, "uploads/" + newFileName);
-      return newFileName;
-    });
-
-    // Get data from request body
+    const { gigId } = req.params;
     const {
-      title,
-      description,
-      category,
-      features,
-      price,
-      revisions,
-      time,
-      shortDesc,
+      skills = [],
+      codingLanguages = [],
+      yearsOfExperience = 0,
+      certificates = [],
+      hourlyRate,
+      isProfileGig
     } = req.body;
-
-    console.log("Received gig edit data:", {
-      title,
-      description,
-      category,
-      features,
-      price,
-      revisions,
-      time,
-      shortDesc,
-    });
-
-    // Validate required fields
-    if (!title || !description || !category || !features || !price ||
-      !revisions || !time || !shortDesc) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
 
     prisma = new PrismaClient();
 
-    // Get old data to clean up images
-    const oldData = await prisma.gigs.findUnique({
-      where: { id: parseInt(req.params.gigId) },
-    });
+    // Generate new embeddings for the updated gig data
+    const gigData = {
+      skills,
+      codingLanguages,
+      certificates,
+      yearsOfExperience: parseInt(yearsOfExperience)
+    };
 
-    if (!oldData) {
-      return res.status(404).json({ message: "Gig not found" });
-    }
+    const embeddings = await generateGigEmbeddings(gigData);
+    const postgresVector = embedToPostgresVector(embeddings);
 
-    // Check if user is the owner of the gig
-    if (oldData.userId !== req.userId) {
-      return res.status(403).json({ message: "You can only edit your own gigs" });
-    }
+    // Update gig with new embeddings using raw SQL
+    const updatedGig = await prisma.$executeRaw`
+      UPDATE "Gigs"
+      SET 
+        "skills" = ${skills}::text[],
+        "codingLanguages" = ${codingLanguages}::text[],
+        "yearsOfExperience" = ${parseInt(yearsOfExperience)},
+        "certificates" = ${certificates}::text[],
+        "hourlyRate" = ${hourlyRate ? parseFloat(hourlyRate) : null},
+        "embedding" = ${postgresVector}::vector
+      WHERE "id" = ${parseInt(gigId)}
+      RETURNING *;
+    `;
 
-    // Parse features from JSON string if it's a string
-    let parsedFeatures;
-    try {
-      parsedFeatures = typeof features === 'string' ? JSON.parse(features) : features;
-    } catch (e) {
-      return res.status(400).json({ message: "Invalid features format" });
-    }
-
-    // Update the gig
-    const updatedGig = await prisma.gigs.update({
-      where: { id: parseInt(req.params.gigId) },
-      data: {
-        title,
-        description,
-        deliveryTime: parseInt(time),
-        category,
-        features: parsedFeatures,
-        price: parseInt(price),
-        shortDesc,
-        revisions: parseInt(revisions),
-        images: fileNames,
-      },
-    });
-
-    // Clean up old images
-    oldData.images.forEach((image) => {
-      try {
-        if (existsSync(`uploads/${image}`)) {
-          unlinkSync(`uploads/${image}`);
-        }
-      } catch (err) {
-        console.error(`Failed to delete image ${image}:`, err);
-      }
-    });
-
-    return res.status(201).json({
-      message: "Successfully updated the gig.",
+    return res.status(200).json({
+      message: "Successfully updated the gig",
       gig: updatedGig
     });
   } catch (err) {
-    console.error("Error updating gig:", err);
-    return res.status(500).json({
-      message: "Internal Server Error",
-      error: err.message
-    });
+    console.error(err);
+    return res.status(500).send("Internal Server Error");
   } finally {
     if (prisma) await prisma.$disconnect();
   }

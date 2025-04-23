@@ -72,8 +72,17 @@ export const createOrder = async (req, res, next) => {
 
     try {
       // Try real Stripe payment intent
+      // Use gig.hourlyRate for the amount, ensure it's a valid number
+      const amount = (gig.hourlyRate && !isNaN(gig.hourlyRate)) ? Math.round(gig.hourlyRate * 100) : 0; // Default to 0 if rate is invalid
+      if (amount <= 0) {
+        console.warn("Invalid or zero amount calculated from hourly rate for Stripe payment. Hourly rate:", gig.hourlyRate);
+        // Decide how to handle this - maybe throw an error or use a default minimum?
+        // For now, proceeding with mock payment path might be safer if amount is 0.
+        throw new Error("Invalid amount for payment intent based on hourly rate.");
+      }
+
       paymentIntent = await stripe.paymentIntents.create({
-        amount: gig.price * 100,
+        amount: amount,
         currency: "usd",
         automatic_payment_methods: {
           enabled: true,
@@ -100,7 +109,8 @@ export const createOrder = async (req, res, next) => {
     const newOrder = await prisma.orders.create({
       data: {
         paymentIntent: paymentIntent.id,
-        price: gig.price,
+        price: Math.round(gig.hourlyRate || 0), // Use gig.hourlyRate for Orders.price, default to 0
+        hourlyRate: gig.hourlyRate || null,
         buyer: { connect: { id: req.userId } },
         gig: { connect: { id: gig.id } },
       },

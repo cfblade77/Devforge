@@ -28,6 +28,13 @@ export const verifyToken = (req, res, next) => {
       }
 
       req.userId = payload?.userId;
+
+      // Also add userId to body if not present
+      if (req.body && !req.body.userId) {
+        req.body.userId = payload?.userId;
+        console.log("Added userId to request body:", req.body.userId);
+      }
+
       console.log("✅ User Authenticated:", req.userId); // ✅ Debugging log
       next();
     });

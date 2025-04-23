@@ -16,6 +16,9 @@ const reducer = (state, action) => {
       return {
         ...state,
         userInfo: action.userInfo,
+        ...(action.userInfo?.role && {
+          isSeller: action.userInfo.role === 'freelancer'
+        })
       };
     case reducerCases.TOGGLE_LOGIN_MODAL:
       return {
@@ -34,10 +37,15 @@ const reducer = (state, action) => {
         showLoginModal: false,
       };
     case reducerCases.SWITCH_MODE:
-      return {
-        ...state,
-        isSeller: !state.isSeller,
-      };
+      if ((state.userInfo?.role === 'client' && state.isSeller) ||
+        (state.userInfo?.role === 'freelancer' && !state.isSeller) ||
+        !state.userInfo?.role) {
+        return {
+          ...state,
+          isSeller: !state.isSeller,
+        };
+      }
+      return state;
     case reducerCases.SET_GIG_DATA:
       return {
         ...state,

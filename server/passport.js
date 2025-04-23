@@ -31,11 +31,13 @@ passport.use(
         } else {
           user = await prisma.user.update({
             where: { githubId: profile.id },
-            data: { githubAccessToken: accessToken },
+            data: {
+              githubAccessToken: accessToken,
+            },
           });
         }
 
-        return done(null, user);
+        return done(null, profile);
       } catch (error) {
         return done(error, null);
       }

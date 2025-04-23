@@ -6,7 +6,8 @@ import {
   setUserImage,
   setUserInfo,
   signup,
-  githubAuthCallback
+  githubAuthCallback,
+  updateClientCompanyData
 } from "../controllers/AuthControllers.js";
 import { verifyToken } from "../middlewares/AuthMiddleware.js";
 import multer from "multer";
@@ -18,6 +19,7 @@ authRoutes.post("/signup", signup);
 authRoutes.post("/login", login);
 authRoutes.post("/get-user-info", verifyToken, getUserInfo);
 authRoutes.post("/set-user-info", verifyToken, setUserInfo);
+authRoutes.post("/update-client-company", verifyToken, updateClientCompanyData);
 
 authRoutes.get("/github", passport.authenticate("github", { scope: ["user:email", "repo"] }));
 authRoutes.get("/github/callback", passport.authenticate("github", { session: false }), githubAuthCallback);

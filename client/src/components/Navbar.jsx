@@ -46,9 +46,7 @@ function Navbar() {
   };
 
   const links = [
-
-    { linkName: "Explore", handler: "#", type: "link" },
-
+    { linkName: "Explore", handler: "/freelancers", type: "link" },
     { linkName: "Become a Seller", handler: "#", type: "link" },
     { linkName: "Sign in", handler: handleLogin, type: "button" },
     { linkName: "Join", handler: handleSignup, type: "button2" },
@@ -61,10 +59,13 @@ function Navbar() {
   };
 
   const handleModeSwitch = () => {
-    if (isSeller) {
+    const canSwitchToClient = userInfo?.role === 'freelancer' || !userInfo?.role;
+    const canSwitchToFreelancer = userInfo?.role === 'client' || !userInfo?.role;
+
+    if (isSeller && canSwitchToClient) {
       dispatch({ type: reducerCases.SWITCH_MODE });
       router.push("/buyer/orders");
-    } else {
+    } else if (!isSeller && canSwitchToFreelancer) {
       dispatch({ type: reducerCases.SWITCH_MODE });
       router.push("/seller");
     }
@@ -98,9 +99,13 @@ function Navbar() {
           if (response.data && response.data.user) {
             let projectedUserInfo = { ...response.data.user };
 
-            // Ensure profile image is always present
-            projectedUserInfo.imageName = response.data.user.profileImage ||
-              `https://ui-avatars.com/api/?name=${response.data.user.username || 'User'}&background=random`;
+            // Generate avatar URL instead of using profileImage
+            const username = response.data.user.username || response.data.user.email?.split('@')[0] || 'User';
+            projectedUserInfo.avatarUrl = `https://ui-avatars.com/api/?name=${username}&background=random`;
+
+            // Remove imageName to prevent image errors
+            delete projectedUserInfo.imageName;
+            delete projectedUserInfo.profileImage;
 
             // Ensure username is always present
             projectedUserInfo.username = response.data.user.username || "Anonymous";
@@ -158,6 +163,15 @@ function Navbar() {
       },
     },
     {
+      name: userInfo?.role === 'client' ? "Account Type: Client" : "Account Type: Freelancer",
+      callback: (e) => {
+        e.stopPropagation();
+        // No action, just informational
+      },
+      disabled: true,
+      className: "text-gray-500 cursor-default"
+    },
+    {
       name: "Logout",
       callback: (e) => {
         e.stopPropagation();
@@ -167,6 +181,27 @@ function Navbar() {
       },
     },
   ];
+
+  const RoleButton = ({ isSeller, userRole, onClick }) => {
+    const isDisabled = (isSeller && userRole === 'freelancer') || (!isSeller && userRole === 'client');
+
+    return (
+      <li
+        className={`relative cursor-pointer font-medium group ${isDisabled ? 'text-gray-400 cursor-not-allowed' : ''}`}
+        onClick={isDisabled ? undefined : onClick}
+      >
+        {isSeller ? "Switch To Buyer" : "Switch To Seller"}
+
+        {isDisabled && (
+          <div className="absolute invisible group-hover:visible bg-gray-800 text-white text-xs rounded py-1 px-2 bottom-full left-1/2 transform -translate-x-1/2 mb-1 w-48 z-50">
+            {userRole === 'freelancer'
+              ? "Your account type is freelancer and cannot switch to buyer mode"
+              : "Your account type is client and cannot switch to seller mode"}
+          </div>
+        )}
+      </li>
+    );
+  };
 
   return (
     <>
@@ -236,12 +271,14 @@ function Navbar() {
             </ul>
           ) : (
             <ul className="flex gap-10 items-center">
-              {isSeller && (
-                <li
-                  className="cursor-pointer text-[#1DBF73] font-medium"
-                  onClick={() => router.push("/seller/gigs/create")}
-                >
-                  Create Gig
+              {userInfo?.role !== 'freelancer' && (
+                <li>
+                  <Link
+                    href="/freelancers"
+                    className="text-[#1DBF73] font-medium hover:text-[#19a164] transition-colors"
+                  >
+                    Explore Developers
+                  </Link>
                 </li>
               )}
               <li
@@ -251,21 +288,11 @@ function Navbar() {
                 Orders
               </li>
 
-              {isSeller ? (
-                <li
-                  className="cursor-pointer font-medium"
-                  onClick={handleModeSwitch}
-                >
-                  Switch To Buyer
-                </li>
-              ) : (
-                <li
-                  className="cursor-pointer font-medium"
-                  onClick={handleModeSwitch}
-                >
-                  Switch To Seller
-                </li>
-              )}
+              <RoleButton
+                isSeller={isSeller}
+                userRole={userInfo?.role}
+                onClick={handleModeSwitch}
+              />
               <li
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -274,9 +301,9 @@ function Navbar() {
                 }}
                 title="Profile"
               >
-                {userInfo?.imageName ? (
+                {userInfo?.avatarUrl ? (
                   <Image
-                    src={userInfo.imageName}
+                    src={userInfo.avatarUrl}
                     alt="Profile"
                     width={40}
                     height={40}
@@ -285,9 +312,7 @@ function Navbar() {
                 ) : (
                   <div className="bg-purple-500 h-10 w-10 flex items-center justify-center rounded-full relative">
                     <span className="text-xl text-white">
-                      {userInfo &&
-                        userInfo?.email &&
-                        userInfo?.email.split("")[0].toUpperCase()}
+                      {userInfo?.email ? userInfo.email[0].toUpperCase() : "U"}
                     </span>
                   </div>
                 )}

@@ -4,6 +4,7 @@
   "main": "index.js",
   "type": "module",
   "dependencies": {
+    "@google/generative-ai": "^0.24.0",
     "@prisma/client": "^6.5.0",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.0",
@@ -24,7 +25,11 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "migrate-profile-data": "node scripts/migrateProfileData.js",
+    "check-schema": "node scripts/check-schema.js",
+    "check-user": "node scripts/check-user.js",
+    "list-users": "node scripts/list-users.js"
   },
   "author": "",
   "license": "ISC",
