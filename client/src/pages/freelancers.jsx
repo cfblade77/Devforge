@@ -3,12 +3,14 @@ import axios from 'axios';
 import { HOST } from '../utils/constants';
 import FreelancerCard from '../components/FreelancerCard';
 import { FaSearch } from 'react-icons/fa';
+import ProfileSearchChatbot from '../components/search/ProfileSearchChatbot';
 
 function Freelancers() {
     const [freelancers, setFreelancers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredFreelancers, setFilteredFreelancers] = useState([]);
+    const [userInfo, setUserInfo] = useState(null);
 
     useEffect(() => {
         const getFreelancers = async () => {
@@ -23,7 +25,25 @@ function Freelancers() {
             }
         };
 
+        const getUserInfo = async () => {
+            try {
+                const token = localStorage.getItem('devforge-token');
+                if (token) {
+                    const response = await axios.get(`${HOST}/api/users/me`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    });
+                    setUserInfo(response.data.user);
+                }
+            } catch (error) {
+                console.error('Error fetching user info:', error);
+                // Continue showing the page even if user info fetch fails
+            }
+        };
+
         getFreelancers();
+        getUserInfo();
     }, []);
 
     useEffect(() => {
@@ -82,8 +102,9 @@ function Freelancers() {
                     ))}
                 </div>
             )}
+            <ProfileSearchChatbot userInfo={userInfo} />
         </div>
     );
 }
 
-export default Freelancers; 
+export default Freelancers;

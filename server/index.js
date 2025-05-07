@@ -11,6 +11,7 @@ import { messageRoutes } from "./routes/MessageRoutes.js";
 import { dashboardRoutes } from "./routes/DashboardRoutes.js";
 import { taskRoutes } from "./routes/TaskRoutes.js";
 import { userRoutes } from "./routes/UserRoutes.js";
+import aiChatRoutes from './routes/AIChatRoutes.js';
 
 
 
@@ -41,6 +42,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/users", userRoutes);
+app.use('/api/ai-chat', aiChatRoutes);
 
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);

@@ -1,0 +1,21 @@
+id,username,email,password,fullName,description,isFreelancer
+1,johndev,john@example.com,password123,John Developer,"Full-stack developer with expertise in MERN stack. I love solving complex problems and creating intuitive UIs.",true
+2,sarahcoder,sarah@example.com,password123,Sarah Smith,"Frontend specialist with 5+ years of experience. Passionate about responsive design and accessibility.",true
+3,mikepython,mike@example.com,password123,Mike Johnson,"Python guru specializing in data science and machine learning. Previously worked at Google and Amazon.",true
+4,emmareact,emma@example.com,password123,Emma Williams,"React expert who loves building elegant components. 3 years experience in fintech applications.",true
+5,davidjava,david@example.com,password123,David Brown,"Senior Java developer with 8+ years of enterprise software development. Specializing in microservices.",true
+6,lisacloud,lisa@example.com,password123,Lisa Garcia,"Cloud solutions architect with expertise in AWS and Azure. DevOps enthusiast and automation expert.",true
+7,tomgraphql,tom@example.com,password123,Tom Wilson,"GraphQL specialist and Node.js developer. Experience building scalable APIs and real-time applications.",true
+8,alexmobile,alex@example.com,password123,Alex Rodriguez,"Mobile developer proficient in React Native and Flutter. Published over 10 apps with 1M+ downloads.",true
+9,rachelmls,rachel@example.com,password123,Rachel Lee,"Machine learning specialist with focus on NLP. PhD in Computer Science and author of several research papers.",true
+10,jamesgame,james@example.com,password123,James Chen,"Game developer with Unity and Unreal Engine expertise. Passionate about creating immersive experiences.",true
+11,natalieui,natalie@example.com,password123,Natalie Kim,"UI/UX designer and frontend developer. Creates beautiful interfaces backed by clean code.",true
+12,ryandata,ryan@example.com,password123,Ryan Taylor,"Data engineer specializing in big data technologies like Hadoop and Spark. ETL pipeline expert.",true
+13,oliviarails,olivia@example.com,password123,Olivia Martinez,"Ruby on Rails developer with 6+ years experience. Full-stack development with focus on API design.",true
+14,ethanangular,ethan@example.com,password123,Ethan Anderson,"Angular specialist with TypeScript expertise. Strong focus on enterprise application development.",true
+15,sophiadevsec,sophia@example.com,password123,Sophia Turner,"DevOps and security engineer. Specializes in CI/CD pipelines and secure infrastructure deployment.",true
+16,danieldocker,daniel@example.com,password123,Daniel Murphy,"Containerization expert with Docker and Kubernetes. Helps companies scale their infrastructure.",true
+17,ariablockchain,aria@example.com,password123,Aria Johnson,"Blockchain developer specializing in Ethereum smart contracts and Web3 applications.",true
+18,lucasvue,lucas@example.com,password123,Lucas White,"Vue.js specialist and frontend architect. Designs and implements scalable component systems.",true
+19,hannahembedded,hannah@example.com,password123,Hannah Clark,"Embedded systems developer with IoT expertise. Worked on smart home and industrial IoT projects.",true
+20,maxwellai,maxwell@example.com,password123,Maxwell Robinson,"AI researcher and engineer. Focuses on deep learning models and computer vision applications.",true
